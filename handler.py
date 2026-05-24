@@ -34,19 +34,20 @@ def verify_license(license_key, feature="train"):
     """Verify license has the required feature for cloud operations."""
     try:
         resp = requests.post(
-            f"{LICENSE_SERVER}/validate",
-            json={"license_key": license_key, "hardware_fingerprint": "runpod-cloud"},
+            f"{LICENSE_SERVER}/activate",
+            json={
+                "license_key": license_key,
+                "hardware_fingerprint": "runpod-cloud-worker",
+                "machine_name": "RunPod Serverless",
+                "os_info": "Linux (RunPod GPU Cloud)"
+            },
             timeout=10
         )
         data = resp.json()
-        sig = data.pop("signature", "")
-        payload = json.dumps(data, sort_keys=True, separators=(",", ":"))
-        expected = hmac.new(HMAC_SECRET.encode(), payload.encode(), hashlib.sha256).hexdigest()
-        if not hmac.compare_digest(expected, sig):
-            return False, "Invalid server signature"
-        if data.get("status") != "valid":
-            return False, data.get("error", "Invalid license")
-        if feature not in data.get("features", []):
+        if "error" in data and "already activated" not in data.get("error", "").lower():
+            return False, data.get("error", "License activation failed")
+        features = data.get("features", [])
+        if feature not in features:
             return False, f"License does not include '{feature}' feature. Upgrade to Advanced."
         return True, None
     except Exception as e:

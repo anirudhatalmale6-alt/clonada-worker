@@ -78,16 +78,24 @@ def download_file(url, output_path):
 
 
 def download_dataset(url, output_dir):
-    """Download and extract training dataset."""
+    """Download and extract training dataset (supports ZIP or single audio file)."""
     os.makedirs(output_dir, exist_ok=True)
-    local_path = os.path.join(output_dir, "dataset.zip")
-    download_file(url, local_path)
 
-    if local_path.endswith(".zip"):
+    url_lower = url.lower().split("?")[0]
+    if url_lower.endswith((".wav", ".mp3", ".flac", ".ogg")):
+        ext = Path(url_lower).suffix
+        local_path = os.path.join(output_dir, f"training_audio{ext}")
+        download_file(url, local_path)
+    else:
+        local_path = os.path.join(output_dir, "dataset.zip")
+        download_file(url, local_path)
         import zipfile
-        with zipfile.ZipFile(local_path, "r") as z:
-            z.extractall(output_dir)
-        os.remove(local_path)
+        try:
+            with zipfile.ZipFile(local_path, "r") as z:
+                z.extractall(output_dir)
+            os.remove(local_path)
+        except zipfile.BadZipFile:
+            os.rename(local_path, os.path.join(output_dir, "training_audio.wav"))
 
     audio_files = []
     for ext in ["*.wav", "*.mp3", "*.flac", "*.ogg"]:

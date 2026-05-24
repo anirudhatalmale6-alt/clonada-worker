@@ -111,7 +111,8 @@ def download_dataset(url, output_dir):
 
 
 def clean_vocals(input_dir, output_dir):
-    """Isolate vocals using Demucs for cleaner training data."""
+    """Isolate vocals using Demucs for cleaner training data.
+    Falls back to raw audio if Demucs fails or produces no output."""
     os.makedirs(output_dir, exist_ok=True)
 
     audio_files = list(Path(input_dir).rglob("*.wav")) + \
@@ -125,12 +126,17 @@ def clean_vocals(input_dir, output_dir):
 
     for i, af in enumerate(audio_files):
         print(f"[CLEAN] ({i+1}/{len(audio_files)}) {af.name}")
-        result = subprocess.run(
-            ["python3", "-m", "demucs", "--two-stems=vocals", "-o", output_dir, str(af)],
-            capture_output=True, text=True, timeout=600
-        )
-        if result.returncode != 0:
-            print(f"[WARN] Demucs failed for {af.name}: {result.stderr[:200]}")
+        try:
+            result = subprocess.run(
+                ["python3", "-m", "demucs", "--two-stems=vocals", "-o", output_dir, str(af)],
+                capture_output=True, text=True, timeout=600
+            )
+            if result.returncode != 0:
+                print(f"[WARN] Demucs failed for {af.name}: {result.stderr[:200]}")
+        except subprocess.TimeoutExpired:
+            print(f"[WARN] Demucs timed out for {af.name}")
+        except Exception as e:
+            print(f"[WARN] Demucs error for {af.name}: {e}")
 
     vocals_dir = os.path.join(output_dir, "clean_vocals")
     os.makedirs(vocals_dir, exist_ok=True)
@@ -139,7 +145,13 @@ def clean_vocals(input_dir, output_dir):
         shutil.copy2(str(vf), dest)
 
     count = len(list(Path(vocals_dir).glob("*.wav")))
-    print(f"[CLEAN] Extracted {count} clean vocal stems")
+    if count == 0:
+        print("[CLEAN] Demucs produced no output, using raw audio as fallback")
+        for af in audio_files:
+            shutil.copy2(str(af), os.path.join(vocals_dir, af.name))
+        count = len(audio_files)
+
+    print(f"[CLEAN] Using {count} audio files for training")
     return vocals_dir
 
 

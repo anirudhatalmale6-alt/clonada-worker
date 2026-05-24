@@ -23,6 +23,8 @@ import torchaudio
 import numpy as np
 from pathlib import Path
 
+sys.path.insert(0, "/clonada_core/python")
+
 WORK_DIR = "/tmp/clonada_work"
 RVC_DIR = "/clonada_core/rvc"
 WEIGHTS_DIR = "/clonada_core/weights"
@@ -200,8 +202,7 @@ def extract_features(sliced_dir, experiment_dir, device="cuda"):
 
     # Load RMVPE
     print("[FEATURES] Loading RMVPE...")
-    sys.path.insert(0, "/clonada_core/python/lib")
-    from rmvpe import RMVPE
+    from lib.rmvpe import RMVPE
     rmvpe = RMVPE(os.path.join(WEIGHTS_DIR, "rmvpe.pt"), device=device)
 
     segments = sorted(Path(sliced_dir).glob("*.wav"))

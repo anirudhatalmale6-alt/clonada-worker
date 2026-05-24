@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt
 
+# Copy inference pipeline (copied by CI before build)
 COPY python /clonada_core/python
 
 # Pre-fetch HuBERT via transformers cache

@@ -20,8 +20,8 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 # Copy inference pipeline (copied by CI before build)
 COPY python /clonada_core/python
 
-# Pre-fetch HuBERT via transformers cache
-RUN python3 -c "from transformers import HubertModel; HubertModel.from_pretrained('facebook/hubert-base-ls960')"
+# Pre-fetch HuBERT model files (download only, no torch.load at build time)
+RUN python3 -c "from huggingface_hub import snapshot_download; snapshot_download('facebook/hubert-base-ls960')"
 
 # Pre-fetch RMVPE weights
 RUN mkdir -p /clonada_core/weights && \

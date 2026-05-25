@@ -23,11 +23,12 @@ import torchaudio
 import numpy as np
 from pathlib import Path
 
-# Force soundfile backend - newer torchaudio defaults to TorchCodec which isn't installed
-try:
-    torchaudio.set_audio_backend("soundfile")
-except Exception:
-    pass
+# Wrapper to force soundfile backend (newer torchaudio defaults to TorchCodec which isn't installed)
+_ta_load = torchaudio.load
+def _load_audio(path, **kwargs):
+    kwargs.setdefault("backend", "soundfile")
+    return _ta_load(path, **kwargs)
+torchaudio.load = _load_audio
 
 sys.path.insert(0, "/clonada_core/python")
 
